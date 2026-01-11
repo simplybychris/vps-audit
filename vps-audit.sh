@@ -252,6 +252,13 @@ LOG_FILE="/var/log/auth.log"
 
 if [ -f "$LOG_FILE" ]; then
     FAILED_LOGINS=$(grep -c "Failed password" "$LOG_FILE" 2>/dev/null || echo 0)
+
+# if debian version > 10, info in journalctl
+elif [ -f "/etc/debian_version" ]; then
+    DEB_VERSION=$(cut -d'.' -f1 /etc/debian_version)
+    if [ "$DEB_VERSION" -gt 10 ]; then
+        FAILED_LOGINS=$(grep -c "Failed password" "journalctl -u ssh --since \"24 hours ago\"" 2>/dev/null || echo 0)
+    fi
 else
     FAILED_LOGINS=0
     check_security "Auth Log" "WARN" "Log file $LOG_FILE not found or unreadable. Assuming 0 failed login attempts."
