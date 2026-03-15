@@ -1,167 +1,209 @@
-# VPS Security Audit Script
+# Mikrus Audit - Skrypt audytu bezpieczenstwa VPS
 
-A comprehensive Bash script for auditing the security and performance of your VPS (Virtual Private Server). This tool performs various security checks and provides a detailed report with recommendations for improvements.
+> **Fork projektu [vps-audit](https://github.com/vernu/vps-audit)** autorstwa [vernu](https://github.com/vernu) - swietnego narzedzia do audytu bezpieczenstwa VPS.
+>
+> Ten fork dodaje pelne tlumaczenie na jezyk polski, adaptacje do srodowiska **[Mikr.us](https://mikr.us)** (kontenery LXC/Proxmox) oraz poprawki bledow z oryginalnego skryptu.
+> Oryginalny skrypt (angielski, uniwersalny) jest nadal dostepny jako `vps-audit.sh`.
 
-<!-- add a screenshot of the output here -->
+![Przykladowe wyniki](./screenshot.png)
 
-![Sample Output](./screenshot.png)
-## Features
+## Co sprawdza
 
-### Security Checks
+### Bezpieczenstwo
 
-- SSH Configuration
-  - Root login status
-  - Password authentication
-  - Non-default port usage
-- Firewall Status (UFW)
-- Fail2ban Configuration
-- Failed Login Attempts
-- System Updates Status
-- Running Services Analysis
-- Open Ports Detection
-- Sudo Logging Configuration
-- Password Policy Enforcement
-- SUID Files Detection
+- **Konfiguracja SSH**
+  - Status logowania root
+  - Uwierzytelnianie haslem
+  - Niestandardowy port SSH
+- **Zapora ogniowa** (UFW, firewalld, iptables, nftables)
+- **Ochrona przed wlamaniami** (Fail2ban, CrowdSec) - takze w kontenerach Docker
+- **Nieudane proby logowania** - wykrywanie atakow brute force
+- **Aktualizacje systemu** - sprawdzanie dostepnych poprawek
+- **Uruchomione uslugi** - analiza powierzchni ataku
+- **Otwarte porty** - wykrywanie nasluchujacych uslug
+- **Logowanie sudo** - sprawdzanie audytu polecen
+- **Polityka hasel** - weryfikacja wymagan zlozonosci
+- **Pliki SUID** - wykrywanie podejrzanych plikow
+- **Automatyczne aktualizacje** (unattended-upgrades)
+- **Uprawnienia plikow systemowych** (/etc/shadow, /etc/passwd itp.)
+- **Konta z pustymi haslami**
 
-### Performance Monitoring
+### Wydajnosc
 
-- Disk Space Usage
-- Memory Usage
-- CPU Usage
-- Active Internet Connections
+- Uzycie dysku
+- Uzycie pamieci RAM
+- Uzycie CPU
+- Otwarte polaczenia sieciowe
 
-## Requirements
+### Specyficzne dla Mikr.us
 
-- Ubuntu/Debian-based Linux system
-- Root access or sudo privileges
-- Basic packages (most are pre-installed):
-  - ufw
-  - systemd
-  - netstat
-  - grep
-  - awk
+- **Wykrywanie kontenera LXC** - automatyczne dostosowanie wynikow
+- **Sprawdzanie IPv6** - kluczowe dla Mikrusa (IPv6-first)
+- **Weryfikacja nasluchiwania na IPv6** - czy uslugi sluchaja na `[::]`
+- **Kontekst portow Mikrusa** - informacja o schemacie 10000+ID / 20000+ID / 30000+ID
+- **Load Average** - ostrzezenie ze w LXC pokazuje obciazenie hosta, nie kontenera
+- **Status Dockera** - kontenery, obrazy, nieuzywane zasoby
+- **Dostosowane progi** - inne limity dla kontenerow LXC (RAM, liczba uslug)
+- **Linki do dokumentacji Mikrusa** w wynikach
 
-## Installation
+## Wymagania
 
-1. Download the script:
+- System Linux (Ubuntu/Debian zalecany)
+- Dostep root lub uprawnienia sudo
+- Podstawowe pakiety (zwykle preinstalowane): `ss`, `grep`, `awk`, `curl`
 
-```bash
-wget https://raw.githubusercontent.com/vernu/vps-audit/main/vps-audit.sh
-# or
-curl -O https://raw.githubusercontent.com/vernu/vps-audit/main/vps-audit.sh
-```
+## Instalacja
 
-2. Make the script executable:
-
-```bash
-chmod +x vps-audit.sh
-```
-
-## Usage
-
-Run the script with sudo privileges:
+### Szybka instalacja (jednolinijkowa)
 
 ```bash
-sudo ./vps-audit.sh
+curl -sL https://raw.githubusercontent.com/simplybychris/vps-audit/main/mikrus-audit.sh | sudo bash
 ```
 
-The script will:
+### Standardowa instalacja
 
-1. Perform all security checks
-2. Display results in real-time with color coding:
-   - 🟢 [PASS] - Check passed successfully
-   - 🟡 [WARN] - Potential issues detected
-   - 🔴 [FAIL] - Critical issues found
-3. Generate a detailed report file: `vps-audit-report-[TIMESTAMP].txt`
+1. Pobierz skrypt:
 
-## Output Format
-
-The script provides two types of output:
-
-1. Real-time console output with color coding:
-
-```
-[PASS] SSH Root Login - Root login is properly disabled in SSH configuration
-[WARN] SSH Port - Using default port 22 - consider changing to a non-standard port
-[FAIL] Firewall Status - UFW firewall is not active - your system is exposed
+```bash
+wget https://raw.githubusercontent.com/simplybychris/vps-audit/main/mikrus-audit.sh
+# lub
+curl -O https://raw.githubusercontent.com/simplybychris/vps-audit/main/mikrus-audit.sh
 ```
 
-2. A detailed report file containing:
-   - All check results
-   - Specific recommendations for failed checks
-   - System resource usage statistics
-   - Timestamp of the audit
+2. Nadaj uprawnienia do uruchomienia:
 
-## Thresholds
+```bash
+chmod +x mikrus-audit.sh
+```
 
-### Resource Usage Thresholds
+## Uzycie
 
-- PASS: < 50% usage
-- WARN: 50-80% usage
-- FAIL: > 80% usage
+Uruchom skrypt z uprawnieniami root:
 
-### Security Thresholds
+```bash
+sudo ./mikrus-audit.sh
+```
 
-- Failed Logins:
-  - PASS: < 10 attempts
-  - WARN: 10-50 attempts
-  - FAIL: > 50 attempts
-- Running Services:
-  - PASS: < 20 services
-  - WARN: 20-40 services
-  - FAIL: > 40 services
-- Open Ports:
-  - PASS: < 10 ports
-  - WARN: 10-20 ports
-  - FAIL: > 20 ports
+Skrypt:
 
-## Customization
+1. Wykona wszystkie sprawdzenia bezpieczenstwa
+2. Wyswietli wyniki na biezaco z kolorowaniem:
+   - `[OK]` - Test przeszedl pomyslnie
+   - `[UWAGA]` - Wykryto potencjalne problemy
+   - `[BLAD]` - Znaleziono krytyczne problemy
+   - `[INFO]` - Informacja kontekstowa (specyficzna dla Mikrusa)
+3. Wygeneruje raport: `mikrus-audit-raport-[ZNACZNIK_CZASU].txt`
 
-You can modify the thresholds by editing the following variables in the script:
+## Format wynikow
 
-- Resource usage thresholds
-- Failed login attempt thresholds
-- Service count thresholds
-- Open port thresholds
+Skrypt generuje dwa rodzaje wynikow:
 
-## Best Practices
+1. Wyniki na zywo w konsoli z kolorowaniem:
 
-1. Run the audit regularly (e.g., weekly) to maintain security
-2. Review the generated report thoroughly
-3. Address any FAIL status immediately
-4. Investigate WARN status during maintenance
-5. Keep the script updated with your security policies
+```
+[OK] Logowanie root SSH - Logowanie jako root jest prawidlowo wylaczone
+[UWAGA] Port SSH - Uzyto domyslnego portu 22 - rozważ zmiane
+[BLAD] Zapora ogniowa - Zapora UFW nie jest aktywna - system narazony
+[INFO] Porty Mikrus - Z zewnatrz dostepne sa tylko porty przekierowane
+```
 
-## Limitations
+2. Plik raportu zawierajacy:
+   - Wyniki wszystkich testow
+   - Konkretne zalecenia dla nieudanych testow
+   - Statystyki zasobow systemowych
+   - Znacznik czasu audytu
 
-- Designed for Debian/Ubuntu-based systems
-- Requires root/sudo access
-- Some checks may need customization for specific environments
-- Not a replacement for professional security audit
+## Progi
 
-## Contributing
+### Zasoby systemowe
 
-Feel free to submit issues and enhancement requests!
+| Zasob | OK | UWAGA | BLAD |
+|-------|--------|---------|-------|
+| Dysk | < 50% | 50-80% | > 80% |
+| Pamiec (VPS) | < 50% | 50-80% | > 80% |
+| Pamiec (LXC/Mikrus) | < 60% | 60-85% | > 85% |
+| CPU | < 50% | 50-80% | > 80% |
 
-## License
+### Bezpieczenstwo
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+| Test | OK | UWAGA | BLAD |
+|------|--------|---------|-------|
+| Nieudane logowania | < 10 | 10-50 | > 50 |
+| Uruchomione uslugi (VPS) | < 20 | 20-40 | > 40 |
+| Uruchomione uslugi (LXC) | < 15 | 15-30 | > 30 |
+| Otwarte porty (VPS) | < 10 | 10-20 | > 20 |
+| Otwarte porty (LXC) | < 15 | 15-25 | > 25 |
 
-## Security Notice
+## Roznice wzgledem oryginalnego vps-audit
 
-While this script helps identify common security issues, it should not be your only security measure. Always:
+| Cecha | vps-audit | mikrus-audit |
+|-------|-----------|--------------|
+| Jezyk | angielski | polski |
+| Srodowisko | standardowy VPS | VPS + LXC/Proxmox (Mikr.us) |
+| Statusy | PASS/WARN/FAIL | OK/UWAGA/BLAD + INFO |
+| IPv6 | brak | sprawdzanie adresu i uslug |
+| Docker | czesciowo | pelne sprawdzenie + czyszczenie |
+| Progi LXC | brak | dostosowane do kontenerow |
+| Load Average | standardowy | z ostrzezeniem o LXC |
+| Uprawnienia plikow | brak | sprawdzanie /etc/shadow itp. |
+| Puste hasla | brak | wykrywanie kont bez hasel |
+| Porty Mikrus | brak | kontekst schematu portow |
+| Parsowanie IPv6 | blad w awk -F':' | poprawione (sed) |
+| SUID timeout | brak (moze wisiec) | timeout 15/30s |
+| Test SSH | brak | test dostepnosci portu |
+| Kontenery Docker | tylko fail2ban/crowdsec | pelny status + awarie |
+| Polityka hasel | zawsze FAIL bez pwquality | kontekstowa (uwzglednia klucze SSH) |
+| Wskazowki | brak | linki do dokumentacji Mikrusa |
 
-- Keep your system updated
-- Monitor logs regularly
-- Follow security best practices
-- Consider professional security audits for critical systems
+## Dobre praktyki
 
-## Support
+1. Uruchamiaj audyt regularnie (np. co tydzien)
+2. Przegladaj wygenerowany raport dokladnie
+3. Napraw natychmiast wszystkie testy ze statusem `[BLAD]`
+4. Zbadaj testy ze statusem `[UWAGA]` podczas konserwacji
+5. Na Mikrusie zwracaj szczegolna uwage na:
+   - Konfiguracje SSH (klucze zamiast hasel!)
+   - Nasluchiwanie uslug na IPv6
+   - Uzycie pamieci RAM (ograniczona w kontenerach)
 
-For support, please:
+## Ograniczenia
 
-1. Check the existing issues
-2. Create a new issue with detailed information
-3. Provide the output of the script and your system information
+- Zaprojektowany glownie dla systemow Debian/Ubuntu
+- Wymaga dostepu root/sudo
+- Niektore testy moga wymagac dostosowania do specyficznego srodowiska
+- Nie zastepuje profesjonalnego audytu bezpieczenstwa
+- W kontenerach LXC niektore polecenia systemowe moga byc ograniczone
 
-Stay secure! 🔒
+## Podziekowania i atrybucja
+
+Ten projekt jest forkiem **[vps-audit](https://github.com/vernu/vps-audit)** autorstwa **[vernu](https://github.com/vernu)**.
+
+Oryginalny skrypt to swietne, proste narzedzie do audytu bezpieczenstwa VPS.
+Ten fork rozszerza go o polskie tlumaczenie i adaptacje do srodowiska Mikr.us,
+zachowujac oryginalny skrypt (`vps-audit.sh`) w niezmienionej formie.
+
+**Poprawki bledow w tym forku** (wzgledem oryginalu):
+- Parsowanie portow IPv6 (`awk -F':'` lamal adresy IPv6 typu `[::]:port`)
+- Polecenie journalctl bylo przekazywane jako string do grep zamiast wykonywane
+- Brak timeoutu na skanowaniu SUID (`find /` mogl wisiec minutami w LXC)
+
+## Licencja
+
+Projekt na licencji MIT - szczegoly w pliku LICENSE.
+
+## Bezpieczenstwo
+
+Ten skrypt pomaga zidentyfikowac typowe problemy bezpieczenstwa, ale nie powinien byc jedynym srodkiem ochrony. Zawsze:
+
+- Aktualizuj system regularnie (`apt update && apt upgrade`)
+- Monitoruj logi systemowe
+- Stosuj dobre praktyki bezpieczenstwa
+- Uzywaj kluczy SSH zamiast hasel
+- Na Mikrusie korzystaj z dokumentacji: https://wiki.mikr.us/
+
+## Przydatne linki (Mikr.us)
+
+- Panel Mikrusa: https://mikr.us/panel/
+- Wiki Mikrusa: https://wiki.mikr.us/
+- Discord: https://mikr.us/discord
+- Facebook: https://mikr.us/facebook
