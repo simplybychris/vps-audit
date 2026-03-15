@@ -6,6 +6,7 @@
 > Oryginalny skrypt (angielski, uniwersalny) jest nadal dostepny jako `vps-audit.sh`.
 
 ![Fragment wynikow audytu na serwerze Mikr.us (sekcja bezpieczenstwa)](./screenshot.jpg)
+
 *Powyzej: fragment audytu - sekcja sprawdzen bezpieczenstwa. Pelna lista sprawdzen ponizej.*
 
 ## Co sprawdza
