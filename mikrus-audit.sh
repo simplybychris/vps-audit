@@ -354,11 +354,12 @@ fi
 if command -v systemctl >/dev/null 2>&1; then
     SERVICES=$(systemctl list-units --type=service --state=running 2>/dev/null | grep -c "loaded active running")
     if [ "$IS_LXC" -eq 1 ]; then
-        # W kontenerze LXC mniej uslug jest normalne
-        if [ "$SERVICES" -lt 15 ]; then
-            check_security "Uruchomione uslugi" "PASS" "Minimalna liczba uslug ($SERVICES) - dobrze dla bezpieczenstwa kontenera"
-        elif [ "$SERVICES" -lt 30 ]; then
-            check_security "Uruchomione uslugi" "WARN" "$SERVICES uslug uruchomionych - rozważ ograniczenie powierzchni ataku"
+        # W kontenerze LXC minimalny dobrze zabezpieczony system ma ~17 uslug
+        # (systemd + ssh + fail2ban + unattended-upgrades + sesje uzytkownikow)
+        if [ "$SERVICES" -lt 25 ]; then
+            check_security "Uruchomione uslugi" "PASS" "Standardowa liczba uslug w kontenerze ($SERVICES)"
+        elif [ "$SERVICES" -lt 40 ]; then
+            check_security "Uruchomione uslugi" "WARN" "$SERVICES uslug uruchomionych - sprawdz czy wszystkie sa potrzebne (systemctl list-units --type=service --state=running)"
         else
             check_security "Uruchomione uslugi" "FAIL" "Zbyt wiele uslug uruchomionych ($SERVICES) - zwieksza powierzchnie ataku"
         fi

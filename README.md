@@ -130,7 +130,7 @@ Skrypt generuje dwa rodzaje wynikow:
 |------|--------|---------|-------|
 | Nieudane logowania | < 10 | 10-50 | > 50 |
 | Uruchomione uslugi (VPS) | < 20 | 20-40 | > 40 |
-| Uruchomione uslugi (LXC) | < 15 | 15-30 | > 30 |
+| Uruchomione uslugi (LXC) | < 25 | 25-40 | > 40 |
 | Otwarte porty (VPS) | < 10 | 10-20 | > 20 |
 | Otwarte porty (LXC) | < 15 | 15-25 | > 25 |
 
