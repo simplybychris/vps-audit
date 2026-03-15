@@ -215,41 +215,41 @@ else
     check_security "Port SSH" "PASS" "Uzyto niestandardowego portu $SSH_PORT - utrudnia automatyczne ataki"
 fi
 
-# Sprawdzanie statusu zapory ogniowej
+# Sprawdzanie statusu zapory sieciowej
 check_firewall_status() {
     if command -v ufw >/dev/null 2>&1; then
         if ufw status 2>/dev/null | grep -qw "active"; then
-            check_security "Zapora ogniowa (UFW)" "PASS" "Zapora UFW jest aktywna i chroni system"
+            check_security "Zapora sieciowa (UFW)" "PASS" "Zapora UFW jest aktywna i chroni system"
         else
             if [ "$IS_LXC" -eq 1 ]; then
-                check_security "Zapora ogniowa (UFW)" "WARN" "Zapora UFW nie jest aktywna. W kontenerze LXC zapora moze byc zarzadzana na poziomie hosta Proxmox"
+                check_security "Zapora sieciowa (UFW)" "WARN" "Zapora UFW nie jest aktywna. W kontenerze LXC zapora moze byc zarzadzana na poziomie hosta Proxmox"
             else
-                check_security "Zapora ogniowa (UFW)" "FAIL" "Zapora UFW nie jest aktywna - system jest narazony na ataki sieciowe"
+                check_security "Zapora sieciowa (UFW)" "FAIL" "Zapora UFW nie jest aktywna - system jest narazony na ataki sieciowe"
             fi
         fi
     elif command -v firewall-cmd >/dev/null 2>&1; then
         if firewall-cmd --state 2>/dev/null | grep -q "running"; then
-            check_security "Zapora ogniowa (firewalld)" "PASS" "Firewalld jest aktywny i chroni system"
+            check_security "Zapora sieciowa (firewalld)" "PASS" "Firewalld jest aktywny i chroni system"
         else
-            check_security "Zapora ogniowa (firewalld)" "FAIL" "Firewalld nie jest aktywny - system jest narazony na ataki sieciowe"
+            check_security "Zapora sieciowa (firewalld)" "FAIL" "Firewalld nie jest aktywny - system jest narazony na ataki sieciowe"
         fi
     elif command -v iptables >/dev/null 2>&1; then
         if iptables -L -n 2>/dev/null | grep -q "Chain INPUT"; then
-            check_security "Zapora ogniowa (iptables)" "PASS" "Reguly iptables sa aktywne i chronia system"
+            check_security "Zapora sieciowa (iptables)" "PASS" "Reguly iptables sa aktywne i chronia system"
         else
-            check_security "Zapora ogniowa (iptables)" "FAIL" "Brak aktywnych regul iptables - system moze byc narazony"
+            check_security "Zapora sieciowa (iptables)" "FAIL" "Brak aktywnych regul iptables - system moze byc narazony"
         fi
     elif command -v nft >/dev/null 2>&1; then
         if nft list ruleset 2>/dev/null | grep -q "table"; then
-            check_security "Zapora ogniowa (nftables)" "PASS" "Reguly nftables sa aktywne i chronia system"
+            check_security "Zapora sieciowa (nftables)" "PASS" "Reguly nftables sa aktywne i chronia system"
         else
-            check_security "Zapora ogniowa (nftables)" "FAIL" "Brak aktywnych regul nftables - system moze byc narazony"
+            check_security "Zapora sieciowa (nftables)" "FAIL" "Brak aktywnych regul nftables - system moze byc narazony"
         fi
     else
         if [ "$IS_LXC" -eq 1 ]; then
-            check_security "Zapora ogniowa" "WARN" "Brak zainstalowanego narzedzia zapory. W kontenerze LXC zapora moze byc zarzadzana przez hosta Proxmox"
+            check_security "Zapora sieciowa" "WARN" "Brak zainstalowanego narzedzia zapory. W kontenerze LXC zapora moze byc zarzadzana przez hosta Proxmox"
         else
-            check_security "Zapora ogniowa" "FAIL" "Brak zainstalowanego narzedzia zapory w systemie"
+            check_security "Zapora sieciowa" "FAIL" "Brak zainstalowanego narzedzia zapory w systemie"
         fi
     fi
 }

@@ -17,7 +17,7 @@
   - Status logowania root
   - Uwierzytelnianie hasłem
   - Niestandardowy port SSH
-- **Zapora ogniowa** (UFW, firewalld, iptables, nftables)
+- **Zapora sieciowa** (UFW, firewalld, iptables, nftables)
 - **Ochrona przed włamaniami** (Fail2ban, CrowdSec) - także w kontenerach Docker
 - **Nieudane próby logowania** - wykrywanie ataków brute force
 - **Aktualizacje systemu** - sprawdzanie dostępnych poprawek
@@ -105,7 +105,7 @@ Skrypt generuje dwa rodzaje wyników:
 ```
 [OK] Logowanie root SSH - Logowanie jako root jest prawidłowo wyłączone
 [UWAGA] Port SSH - Użyto domyślnego portu 22 - rozważ zmianę
-[BŁĄD] Zapora ogniowa - Zapora UFW nie jest aktywna - system narażony
+[BŁĄD] Zapora sieciowa - Zapora UFW nie jest aktywna - system narażony
 [INFO] Porty Mikrus - Z zewnątrz dostępne są tylko porty przekierowane
 ```
 
