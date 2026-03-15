@@ -551,7 +551,9 @@ else
 fi
 
 # Sprawdzanie IPv6
-IPV6_ADDR=$(ip -6 addr show 2>/dev/null | grep -v "fe80\|::1" | grep "inet6" | awk '{print $2}' | head -1)
+# UWAGA: grep -v "::1" z oryginalu filtrowal tez adresy typu ::178 (::1 jest podciagiem)
+# Poprawiono na dokladne dopasowanie ::1/128 (loopback)
+IPV6_ADDR=$(ip -6 addr show 2>/dev/null | grep "inet6" | grep -v "fe80" | grep -v " ::1/128" | awk '{print $2}' | head -1)
 if [ -n "$IPV6_ADDR" ]; then
     check_security "Adres IPv6" "PASS" "Przydzielony adres IPv6: $IPV6_ADDR (kluczowy dla Mikrusa)"
 else
@@ -635,12 +637,20 @@ if [ "$PERM_ISSUES" -eq 0 ]; then
 fi
 
 # Sprawdzanie czy sa uzytkownicy z pustym haslem
-EMPTY_PASS=$(awk -F: '($2 == "" || $2 == "!") {print $1}' /etc/shadow 2>/dev/null | grep -v "^$" | wc -l)
+# UWAGA: konta z "!" lub "!!" to konta CELOWO ZABLOKOWANE (np. sshd, messagebus) - to jest OK
+# Szukamy tylko kont z naprawde pustym polem hasla (brak jakiejkolwiek wartosci)
+EMPTY_PASS=$(awk -F: '($2 == "") {print $1}' /etc/shadow 2>/dev/null | grep -v "^$" | wc -l)
 if [ "$EMPTY_PASS" -gt 0 ]; then
-    EMPTY_USERS=$(awk -F: '($2 == "" || $2 == "!") {print $1}' /etc/shadow 2>/dev/null | tr '\n' ', ' | sed 's/,$//')
-    check_security "Puste hasla" "WARN" "Znaleziono $EMPTY_PASS kont z pustym/zablokowanym haslem: $EMPTY_USERS"
+    EMPTY_USERS=$(awk -F: '($2 == "") {print $1}' /etc/shadow 2>/dev/null | tr '\n' ', ' | sed 's/,$//')
+    check_security "Puste hasla" "FAIL" "Znaleziono $EMPTY_PASS kont z pustym haslem (brak zabezpieczenia!): $EMPTY_USERS"
 else
     check_security "Puste hasla" "PASS" "Brak kont z pustymi haslami"
+fi
+
+# Sprawdzanie kont z zablokowanym logowaniem (informacyjnie)
+LOCKED_PASS=$(awk -F: '($2 == "!" || $2 == "!!" || $2 == "*") {print $1}' /etc/shadow 2>/dev/null | grep -v "^$" | wc -l)
+if [ "$LOCKED_PASS" -gt 0 ]; then
+    check_security "Zablokowane konta" "INFO" "$LOCKED_PASS kont z zablokowanym logowaniem haslem (to jest poprawne zabezpieczenie)"
 fi
 
 # Podsumowanie informacji o systemie w raporcie
