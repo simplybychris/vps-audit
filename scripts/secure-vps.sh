@@ -14,7 +14,6 @@
 #   6. Instaluje fail2ban (banuje IP po nieudanych próbach SSH)
 #   7. Instaluje firewall UFW (blokuje niepotrzebne porty)
 #   8. Włącza automatyczne aktualizacje bezpieczeństwa
-#   9. Włącza logowanie poleceń sudo
 #
 # Skrypt sprawdza co już jest zrobione i pomija ukończone kroki.
 #
@@ -64,7 +63,7 @@ echo ""
 
 # ── 1. Aktualizacja systemu ──────────────────────────────────────────────────
 # Instaluje najnowsze poprawki bezpieczeństwa i aktualizuje pakiety.
-echo "=== [1/8] Aktualizacja systemu ==="
+echo "=== [1/7] Aktualizacja systemu ==="
 apt update -qq && apt upgrade -y -qq
 echo "System zaktualizowany."
 
@@ -72,7 +71,7 @@ echo "System zaktualizowany."
 # Generuje losowe hasło i ustawia je dla root.
 # Celowo nie zapisujemy tego hasła — od teraz logowanie jest tylko kluczem SSH.
 # Gdybyś potrzebował dostępu awaryjnego, mikr.us ma panel WebSSH.
-echo "=== [2/8] Zmiana hasła root ==="
+echo "=== [2/7] Zmiana hasła root ==="
 NEW_PASS=$(openssl rand -base64 24)
 echo "root:${NEW_PASS}" | chpasswd
 echo "Hasło root zmienione na losowe (nie jest nigdzie zapisane)."
@@ -81,7 +80,7 @@ echo "Hasło root zmienione na losowe (nie jest nigdzie zapisane)."
 # Dlaczego nie root? Root to domyślne konto na każdym Linuksie.
 # Boty w internecie non-stop próbują się logować jako root.
 # Własne konto o nieoczywistej nazwie to dodatkowa bariera.
-echo "=== [3/8] Tworzenie użytkownika ==="
+echo "=== [3/7] Tworzenie użytkownika ==="
 
 if id "$ADMIN_USER" &>/dev/null; then
     echo "  $ADMIN_USER już istnieje — pomijam."
@@ -97,7 +96,7 @@ echo "Użytkownik $ADMIN_USER gotowy (sudo bez hasła)."
 # ── 4. Kopiowanie kluczy SSH ─────────────────────────────────────────────────
 # Kopiujemy klucz publiczny z root na oba nowe konta.
 # Dzięki temu możesz się logować na nowe konta tym samym kluczem.
-echo "=== [4/8] Kopiowanie kluczy SSH ==="
+echo "=== [4/7] Kopiowanie kluczy SSH ==="
 mkdir -p /home/$ADMIN_USER/.ssh
 cp /root/.ssh/authorized_keys /home/$ADMIN_USER/.ssh/
 chown -R $ADMIN_USER:$ADMIN_USER /home/$ADMIN_USER/.ssh
@@ -116,7 +115,7 @@ echo "Klucze SSH skopiowane na konto $ADMIN_USER."
 #   MaxAuthTries 3              — max 3 próby na połączenie
 #   LoginGraceTime 20           — 20 sekund na uwierzytelnienie
 #   AllowUsers                  — tylko wymienieni użytkownicy mogą się logować
-echo "=== [5/8] SSH Hardening ==="
+echo "=== [5/7] SSH Hardening ==="
 cat > /etc/ssh/sshd_config.d/hardening.conf << SSHEOF
 PermitRootLogin no
 PasswordAuthentication no
@@ -137,7 +136,7 @@ echo "SSH: root zablokowany, hasła wyłączone, tylko klucze."
 # Monitoruje logi SSH i banuje IP po zbyt wielu nieudanych próbach.
 # 3 nieudane próby w ciągu godziny = ban na 24 godziny.
 # backend=systemd — Ubuntu 24.04 używa journald, nie klasycznych logów.
-echo "=== [6/8] fail2ban ==="
+echo "=== [6/7] fail2ban ==="
 if command -v fail2ban-client &>/dev/null; then
     echo "  fail2ban już zainstalowany — aktualizuję konfigurację."
 else
@@ -170,7 +169,7 @@ echo "fail2ban: ban 24h po 3 nieudanych próbach SSH."
 # są bezpośrednio dostępne z internetu (IPv4 jest za NAT).
 #
 # unattended-upgrades automatycznie instaluje poprawki bezpieczeństwa Ubuntu.
-echo "=== [7/8] Firewall + auto-aktualizacje ==="
+echo "=== [7/7] Firewall + auto-aktualizacje ==="
 if command -v ufw &>/dev/null; then
     echo "  UFW już zainstalowany."
 else
@@ -196,17 +195,6 @@ dpkg-reconfigure -f noninteractive unattended-upgrades 2>/dev/null
 echo "Firewall: deny all, allow SSH/HTTP/HTTPS + rate limit."
 echo "Auto-aktualizacje: włączone."
 
-# ── 8. Logowanie sudo ──────────────────────────────────────────────────────
-# Włączamy logowanie poleceń sudo do pliku /var/log/sudo.log
-# Dzięki temu masz pełny audyt kto i co robił z uprawnieniami root.
-echo "=== [8/8] Logowanie sudo ==="
-if grep -q "^Defaults.*logfile" /etc/sudoers 2>/dev/null; then
-    echo "  Logowanie sudo już skonfigurowane."
-else
-    echo 'Defaults logfile="/var/log/sudo.log"' >> /etc/sudoers
-    echo "Logowanie sudo: włączone (/var/log/sudo.log)."
-fi
-
 # ── GOTOWE ───────────────────────────────────────────────────────────────────
 echo ""
 echo "============================================"
@@ -219,7 +207,6 @@ echo "  Hasła:          WYŁĄCZONE (tylko klucz SSH)"
 echo "  Firewall:       WŁĄCZONY (SSH/HTTP/HTTPS)"
 echo "  fail2ban:       AKTYWNY (ban 24h po 3 próbach)"
 echo "  Auto-update:    WŁĄCZONY"
-echo "  Logowanie sudo: WŁĄCZONE (/var/log/sudo.log)"
 echo ""
 echo "  Zaloguj się teraz na swoje konto:"
 echo "    ssh -p PORT $ADMIN_USER@SERWER"

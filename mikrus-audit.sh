@@ -487,7 +487,7 @@ if [ -f /etc/sudoers ]; then
     if grep -q "^Defaults.*logfile" /etc/sudoers 2>/dev/null; then
         check_security "Logowanie sudo" "PASS" "Polecenia sudo są logowane w celach audytu"
     else
-        check_security "Logowanie sudo" "FAIL" "Polecenia sudo nie są logowane - ogranicza możliwości audytu. Dodaj 'Defaults logfile=/var/log/sudo.log' do /etc/sudoers"
+        check_security "Logowanie sudo" "WARN" "Polecenia sudo nie są logowane - rozważ dodanie 'Defaults logfile=/var/log/sudo.log' do /etc/sudoers"
     fi
 else
     check_security "Logowanie sudo" "INFO" "Plik /etc/sudoers nie znaleziony"
