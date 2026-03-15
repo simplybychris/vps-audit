@@ -219,10 +219,10 @@ Po uruchomieniu wklej klucz w panelu Mikr.us: **Zarządzanie VPSem -> Klucz SSH*
 
 ### secure-vps.sh — zabezpieczenie serwera
 
-Pełny hardening VPS w jednym skrypcie. Uruchom na serwerze jako root:
+Pełny hardening VPS w jednym skrypcie. Pobierz i uruchom na serwerze jako root:
 
 ```bash
-curl -sL https://raw.githubusercontent.com/simplybychris/vps-audit/main/scripts/secure-vps.sh | bash
+curl -sL https://raw.githubusercontent.com/simplybychris/vps-audit/main/scripts/secure-vps.sh -o secure-vps.sh && bash secure-vps.sh
 ```
 
 Co robi:
