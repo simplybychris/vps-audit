@@ -5,7 +5,8 @@
 > Ten fork dodaje pelne tlumaczenie na jezyk polski, adaptacje do srodowiska **[Mikr.us](https://mikr.us)** (kontenery LXC/Proxmox) oraz poprawki bledow z oryginalnego skryptu.
 > Oryginalny skrypt (angielski, uniwersalny) jest nadal dostepny jako `vps-audit.sh`.
 
-![Przykladowe wyniki audytu na serwerze Mikr.us](./screenshot.jpg)
+![Fragment wynikow audytu na serwerze Mikr.us (sekcja bezpieczenstwa)](./screenshot.jpg)
+*Powyzej: fragment audytu - sekcja sprawdzen bezpieczenstwa. Pelna lista sprawdzen ponizej.*
 
 ## Co sprawdza
 
