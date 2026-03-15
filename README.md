@@ -203,6 +203,44 @@ Ten skrypt pomaga zidentyfikowac typowe problemy bezpieczenstwa, ale nie powinie
 - Uzywaj kluczy SSH zamiast hasel
 - Na Mikrusie korzystaj z dokumentacji: https://wiki.mikr.us/
 
+## Skrypty pomocnicze
+
+W katalogu `scripts/` znajdziesz gotowe skrypty do konfiguracji serwera:
+
+### ssh_setup.sh — generowanie klucza SSH
+
+Generuje klucz Ed25519, wyswietla go i kopiuje do schowka. Uruchom na swoim komputerze (nie na serwerze):
+
+```bash
+curl -sL https://raw.githubusercontent.com/simplybychris/vps-audit/main/scripts/ssh_setup.sh | bash
+```
+
+Po uruchomieniu wklej klucz w panelu Mikr.us: **Zarzadzanie VPSem -> Klucz SSH**.
+
+### secure-vps.sh — zabezpieczenie serwera
+
+Pelny hardening VPS w jednym skrypcie. Uruchom na serwerze jako root:
+
+```bash
+curl -sL https://raw.githubusercontent.com/simplybychris/vps-audit/main/scripts/secure-vps.sh | bash
+```
+
+Co robi:
+- Tworzy Twoje konto (pyta o nazwe) i wylacza roota
+- Kopiuje klucze SSH na nowe konto
+- Instaluje fail2ban (ban 24h po 3 nieudanych probach)
+- Wlacza firewall UFW (SSH/HTTP/HTTPS)
+- Wlacza automatyczne aktualizacje bezpieczenstwa
+
+### Zalecana kolejnosc
+
+1. `ssh_setup.sh` (na Macu/PC) → klucz w schowku
+2. Panel Mikr.us → wklej klucz SSH
+3. Poczekaj 3-4 minuty
+4. `mikrus-audit.sh` (na serwerze) → zobacz co jest do naprawy
+5. `secure-vps.sh` (na serwerze) → napraw automatycznie
+6. `mikrus-audit.sh` ponownie → sprawdz ze wszystko zielone
+
 ## Przydatne linki (Mikr.us)
 
 - Panel Mikrusa: https://mikr.us/panel/
