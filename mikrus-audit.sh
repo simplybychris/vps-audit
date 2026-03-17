@@ -26,6 +26,14 @@ BLUE='\033[0;34m'
 BOLD='\033[1m'
 NC='\033[0m' # Brak koloru
 
+# Tryb prywatności (--privacy): maskuje wrażliwe dane w konsoli, plik raportu zawiera pełne dane
+PRIVACY_MODE=0
+for arg in "$@"; do
+    case "$arg" in
+        --privacy) PRIVACY_MODE=1 ;;
+    esac
+done
+
 # Znacznik czasu dla nazwy raportu
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 REPORT_FILE="mikrus-audit-raport-${TIMESTAMP}.txt"
@@ -41,6 +49,19 @@ if grep -qa "lxc" /proc/1/environ 2>/dev/null || \
     IS_LXC=1
 fi
 
+# Funkcje maskowania wrażliwych danych (aktywne tylko w trybie --privacy)
+mask_ipv6() {
+    local addr="$1"
+    if [ "$PRIVACY_MODE" -eq 0 ]; then echo "$addr"; return; fi
+    echo "$addr" | sed 's/^\([^:]*:[^:]*\):.*/\1:****:****:****:****/'
+}
+
+mask_dns_list() {
+    local dns="$1"
+    if [ "$PRIVACY_MODE" -eq 0 ]; then echo "$dns"; return; fi
+    echo "[ukryte - użyj --privacy=off lub sprawdź raport]"
+}
+
 print_header() {
     local header="$1"
     echo -e "\n${BLUE}${BOLD}$header${NC}"
@@ -51,14 +72,19 @@ print_header() {
 print_info() {
     local label="$1"
     local value="$2"
-    echo -e "${BOLD}$label:${NC} $value"
+    local display_value="${3:-$value}"
+    echo -e "${BOLD}$label:${NC} $display_value"
     echo "$label: $value" >> "$REPORT_FILE"
 }
 
 # Rozpoczęcie audytu
 echo -e "${BLUE}${BOLD}Mikrus Audit - Audyt bezpieczeństwa VPS${NC}"
 echo -e "${GRAY}Bazuje na: https://github.com/vernu/vps-audit${NC}"
-echo -e "${GRAY}Rozpoczęcie audytu: $(date)${NC}\n"
+echo -e "${GRAY}Rozpoczęcie audytu: $(date)${NC}"
+if [ "$PRIVACY_MODE" -eq 1 ]; then
+    echo -e "${YELLOW}${BOLD}[TRYB PRYWATNOŚCI]${NC} ${GRAY}Adresy IPv6 i DNS maskowane w konsoli. Pełne dane w raporcie: $REPORT_FILE${NC}"
+fi
+echo ""
 
 echo "Mikrus Audit - Audyt bezpieczeństwa VPS" > "$REPORT_FILE"
 echo "Bazuje na: https://github.com/vernu/vps-audit" >> "$REPORT_FILE"
@@ -100,7 +126,7 @@ print_info "Rdzenie CPU" "$CPU_CORES"
 print_info "Pamięć RAM" "$TOTAL_MEM"
 print_info "Przestrzeń dyskowa" "$TOTAL_DISK"
 print_info "Publiczny IP (IPv4)" "$PUBLIC_IP"
-print_info "Publiczny IP (IPv6)" "$PUBLIC_IPV6"
+print_info "Publiczny IP (IPv6)" "$PUBLIC_IPV6" "$(mask_ipv6 "$PUBLIC_IPV6")"
 
 if [ "$IS_LXC" -eq 1 ]; then
     print_info "Load Average" "$LOAD_AVERAGE (UWAGA: w LXC pokazuje obciążenie hosta Proxmox, nie kontenera)"
@@ -118,22 +144,23 @@ check_security() {
     local test_name="$1"
     local status="$2"
     local message="$3"
+    local display_message="${4:-$3}"
 
     case $status in
         "PASS")
-            echo -e "${GREEN}[OK]${NC} $test_name ${GRAY}- $message${NC}"
+            echo -e "${GREEN}[OK]${NC} $test_name ${GRAY}- $display_message${NC}"
             echo "[OK] $test_name - $message" >> "$REPORT_FILE"
             ;;
         "WARN")
-            echo -e "${YELLOW}[UWAGA]${NC} $test_name ${GRAY}- $message${NC}"
+            echo -e "${YELLOW}[UWAGA]${NC} $test_name ${GRAY}- $display_message${NC}"
             echo "[UWAGA] $test_name - $message" >> "$REPORT_FILE"
             ;;
         "FAIL")
-            echo -e "${RED}[BŁĄD]${NC} $test_name ${GRAY}- $message${NC}"
+            echo -e "${RED}[BŁĄD]${NC} $test_name ${GRAY}- $display_message${NC}"
             echo "[BŁĄD] $test_name - $message" >> "$REPORT_FILE"
             ;;
         "INFO")
-            echo -e "${BLUE}[INFO]${NC} $test_name ${GRAY}- $message${NC}"
+            echo -e "${BLUE}[INFO]${NC} $test_name ${GRAY}- $display_message${NC}"
             echo "[INFO] $test_name - $message" >> "$REPORT_FILE"
             ;;
     esac
@@ -556,7 +583,7 @@ fi
 # Poprawiono na dokładne dopasowanie ::1/128 (loopback)
 IPV6_ADDR=$(ip -6 addr show 2>/dev/null | grep "inet6" | grep -v "fe80" | grep -v " ::1/128" | awk '{print $2}' | head -1)
 if [ -n "$IPV6_ADDR" ]; then
-    check_security "Adres IPv6" "PASS" "Przydzielony adres IPv6: $IPV6_ADDR (kluczowy dla Mikrusa)"
+    check_security "Adres IPv6" "PASS" "Przydzielony adres IPv6: $IPV6_ADDR (kluczowy dla Mikrusa)" "Przydzielony adres IPv6: $(mask_ipv6 "$IPV6_ADDR") (kluczowy dla Mikrusa)"
 else
     check_security "Adres IPv6" "WARN" "Nie wykryto globalnego adresu IPv6 - na Mikrusie IPv6 jest podstawą działania"
 fi
@@ -608,7 +635,7 @@ fi
 # Sprawdzanie konfiguracji DNS
 if [ -f /etc/resolv.conf ]; then
     DNS_SERVERS=$(grep "^nameserver" /etc/resolv.conf | awk '{print $2}' | tr '\n' ', ' | sed 's/,$//')
-    check_security "Serwery DNS" "INFO" "Skonfigurowane serwery DNS: $DNS_SERVERS"
+    check_security "Serwery DNS" "INFO" "Skonfigurowane serwery DNS: $DNS_SERVERS" "Skonfigurowane serwery DNS: $(mask_dns_list "$DNS_SERVERS")"
 fi
 
 # Sprawdzanie uprawnień ważnych plików
