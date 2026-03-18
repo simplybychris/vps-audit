@@ -50,16 +50,28 @@ if grep -qa "lxc" /proc/1/environ 2>/dev/null || \
 fi
 
 # Funkcje maskowania wrażliwych danych (aktywne tylko w trybie --privacy)
+mask_ipv4() {
+    local addr="$1"
+    if [ "$PRIVACY_MODE" -eq 0 ]; then echo "$addr"; return; fi
+    echo "$addr" | sed 's/\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)/\1.***.***.\4/'
+}
+
 mask_ipv6() {
     local addr="$1"
     if [ "$PRIVACY_MODE" -eq 0 ]; then echo "$addr"; return; fi
     echo "$addr" | sed 's/^\([^:]*:[^:]*\):.*/\1:****:****:****:****/'
 }
 
+mask_hostname() {
+    local name="$1"
+    if [ "$PRIVACY_MODE" -eq 0 ]; then echo "$name"; return; fi
+    echo "***"
+}
+
 mask_dns_list() {
     local dns="$1"
     if [ "$PRIVACY_MODE" -eq 0 ]; then echo "$dns"; return; fi
-    echo "[ukryte - użyj --privacy=off lub sprawdź raport]"
+    echo "$dns" | sed 's/[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*/***.***/g; s/[0-9a-f]*:[0-9a-f]*:[0-9a-f]*:[0-9a-f:]*/***:****/g'
 }
 
 print_header() {
@@ -117,7 +129,7 @@ PUBLIC_IPV6=$(curl -s --max-time 5 https://api6.ipify.org 2>/dev/null || echo "n
 LOAD_AVERAGE=$(uptime | awk -F'load average:' '{print $2}' | xargs)
 
 # Wyświetlanie informacji o systemie
-print_info "Nazwa hosta" "$CURRENT_HOSTNAME"
+print_info "Nazwa hosta" "$CURRENT_HOSTNAME" "$(mask_hostname "$CURRENT_HOSTNAME")"
 print_info "System operacyjny" "$OS_INFO"
 print_info "Wersja jądra" "$KERNEL_VERSION"
 print_info "Czas pracy" "$UPTIME_INFO (od $UPTIME_SINCE)"
@@ -125,7 +137,7 @@ print_info "Model CPU" "$CPU_INFO"
 print_info "Rdzenie CPU" "$CPU_CORES"
 print_info "Pamięć RAM" "$TOTAL_MEM"
 print_info "Przestrzeń dyskowa" "$TOTAL_DISK"
-print_info "Publiczny IP (IPv4)" "$PUBLIC_IP"
+print_info "Publiczny IP (IPv4)" "$PUBLIC_IP" "$(mask_ipv4 "$PUBLIC_IP")"
 print_info "Publiczny IP (IPv6)" "$PUBLIC_IPV6" "$(mask_ipv6 "$PUBLIC_IPV6")"
 
 if [ "$IS_LXC" -eq 1 ]; then
